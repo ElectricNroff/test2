@@ -8,21 +8,11 @@ jobs:
   copy_issue:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch issue data
+      - name: Copy title and body
         run: |
-          ISSUE_DATA=$(curl -H "Authorization: Bearer ${{ secrets.TEST2_FINE_GRAINED }}" \
+          ISSUE_DATA=$(curl -s -S -H "Authorization: Bearer ${{ secrets.TEST2_FINE_GRAINED }}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}")
           TITLE=$(echo "$ISSUE_DATA" | jq -r '.title')
           BODY=$(echo "$ISSUE_DATA" | jq -r '.body')
-          echo "---" > issue_data.md
-          echo "title: $TITLE" >> issue_data.md
-          echo "---" >> issue_data.md
-          echo "$BODY" >> issue_data.md
-
-      - name: Create issue in another repository
-        uses: JasonEtco/create-an-issue@v2.4.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.A12Y_FINE_GRAINED }}
-        with:
-          filename: issue_data.md
-          repository: 'ElectricNroff/a12y'
+	  echo "{\"title\": \"$TITLE\", \"body\": \"$BODY\"}" > issue.json
+          curl -s -S -X POST -H "Authorization: Bearer ${{ secrets.A12Y_FINE_GRAINED }}" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" --data-binary @issue.json https://api.github.com/repos/ElectricNroff/a12y/issues
