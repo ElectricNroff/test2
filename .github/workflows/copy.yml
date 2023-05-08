@@ -1,0 +1,28 @@
+name: Copy new issues to another repository
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  copy_issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch issue data
+        run: |
+          ISSUE_DATA=$(curl -H "Authorization: Bearer ${{ secrets.TEST2_FINE_GRAINED }}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}")
+          TITLE=$(echo "$ISSUE_DATA" | jq -r '.title')
+          BODY=$(echo "$ISSUE_DATA" | jq -r '.body')
+          echo "---" > issue_data.md
+          echo "title: $TITLE" >> issue_data.md
+          echo "---" >> issue_data.md
+          echo "$BODY" >> issue_data.md
+
+      - name: Create issue in another repository
+        uses: JasonEtco/create-an-issue@v2.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.A12Y_FINE_GRAINED }}
+        with:
+          filename: issue_data.md
+          repository: 'ElectricNroff/a12y'
